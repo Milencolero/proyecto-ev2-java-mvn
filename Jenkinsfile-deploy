@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    tools {
+        // Nombres configurados en Jenkins (pueden ser genéricos para el informe)
+        maven 'Maven-3'
+        jdk   'JDK-17'
+    }
+
+    environment {
+        // Variables simuladas de ambiente de pruebas
+        TEST_SERVER = 'qa-servidor.ejemplo.local'
+        TEST_PATH   = '/opt/apps/proyecto-ev2-java-mvn'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                // Obtiene el código desde el repositorio Git
+                checkout scm
+            }
+        }
+
+        stage('Build Artifact') {
+            steps {
+                echo 'Construyendo artefacto para despliegue...'
+                // Construye el .jar, sin volver a ejecutar los tests unitarios
+                sh 'mvn -B clean package -DskipTests'
+            }
+        }
+
+        stage('Acceptance Tests') {
+            steps {
+                echo 'Ejecutando pruebas de aceptación (simuladas)...'
+                // Aquí podrías usar un perfil específico de Maven.
+                // Para el examen, basta con simular la ejecución.
+                sh '''
+                    echo "Iniciando pruebas de aceptación..."
+                    mvn -B test
+                    echo "Pruebas de aceptación finalizadas correctamente."
+                '''
+            }
+        }
+
+        stage('Deploy to Test Environment') {
+            steps {
+                echo "Desplegando artefacto en ambiente de PRUEBA (simulado)..."
+                sh """
+                    ls target
+
+                    echo "Copiando .jar al servidor de pruebas ${TEST_SERVER}..."
+                    echo "scp target/proyecto-ev2-java-mvn-1.0-SNAPSHOT.jar deploy@${TEST_SERVER}:${TEST_PATH}/"
+
+                    echo "Reiniciando servicio de pruebas..."
+                    echo "ssh deploy@${TEST_SERVER} 'systemctl restart proyecto-ev2-java-mvn-test.service'"
+
+                    echo "Despliegue en ambiente de prueba COMPLETADO (simulado)."
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment pipeline ejecutado correctamente (acceptance tests + deploy a entorno de prueba).'
+        }
+        failure {
+            echo '❌ Falló el deployment pipeline. Revisar logs de aceptación o despliegue.'
+        }
+    }
+}
